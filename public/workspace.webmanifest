@@ -1,0 +1,13 @@
+{
+  "name": "共享项目工作台",
+  "short_name": "共享工作台",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#faf8f4",
+  "theme_color": "#d76b43",
+  "icons": [
+    { "src": "/icons/workspace-v3-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/workspace-v3-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

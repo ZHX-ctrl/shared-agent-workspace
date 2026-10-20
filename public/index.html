@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="referrer" content="no-referrer">
+  <title>共享项目工作台</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/workspace-v3-32.png">
+  <link rel="icon" type="image/x-icon" sizes="16x16 24x24 32x32 48x48 64x64 128x128 256x256" href="/icons/workspace-v3.ico">
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/workspace-v3-180.png">
+  <link rel="manifest" href="/workspace.webmanifest">
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <div class="workspace" id="workspace">
+    <aside class="sidebar" aria-label="项目与账号">
+      <div class="brand"><img class="workspace-icon brand-mark" src="/icons/workspace-v3-64.png" width="30" height="30" alt=""><span class="brand-name">工作台</span><button class="icon-button" id="search-chats" aria-label="搜索聊天" title="搜索聊天（Ctrl + K）">⌕</button><button class="icon-button sidebar-close" id="close-sidebar" aria-label="关闭项目列表">×</button></div>
+      <details id="workspace-menu" hidden><button id="menu-new-project"></button><button id="menu-archived"></button><button id="menu-theme"></button></details>
+      <button class="new-chat-action" id="new-chat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M13 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-7M10 14l1-4 8-8 3 3-8 8-4 1Z"/></svg><span>新建聊天</span></button>
+      <div class="project-section">
+        <div class="section-label"><button class="text-button" id="collapse-projects">项目 <span id="project-count"></span> ⌄</button><button class="section-add" id="sort-projects" aria-label="聊天排序" title="切换聊天排序：最近更新 / 创建时间">⇅</button><button class="section-add" id="new-project" aria-label="新建或连接项目" title="新建或连接项目">＋</button></div>
+        <nav class="project-list" id="project-list" aria-label="共享项目"></nav>
+        <section class="recents-section" id="recents-section" hidden><div class="section-label"><span>最近</span></div><nav id="recent-chats" aria-label="最近聊天"></nav></section>
+        <button class="archive-link" id="show-archived">已归档聊天</button>
+      </div>
+      <section class="accounts" aria-label="订阅额度">
+        <div class="section-label"><span></span><button class="text-button" id="refresh-providers" title="读取官方工具当前可提供的额度">刷新</button></div>
+        <div id="providers"><p class="muted small">正在读取本机工具状态…</p></div>
+
+      </section>
+      <div class="sidebar-footer"><img class="workspace-icon local-icon" src="/icons/workspace-v3-64.png" width="30" height="30" alt=""><div><div>本地工作区</div><span class="connection" id="connection">正在连接</span></div><button class="icon-button" id="theme-toggle" aria-label="切换到深色主题" title="切换主题">◐</button></div>
+    </aside>
+    <button class="sidebar-backdrop" id="sidebar-backdrop" aria-label="关闭项目列表" hidden></button>
+    <main class="main">
+      <header class="project-header">
+        <button class="icon-button menu-button" id="open-sidebar" aria-label="打开项目列表">☰</button>
+        <div class="project-heading"><h1 id="project-title">共享项目工作台</h1><p id="project-path">一个项目文件夹，两位助手接续工作</p></div>
+        <span class="header-tag" id="project-tag">本地运行</span>
+        <button class="icon-button" id="chat-actions" aria-label="聊天选项" title="聊天选项" hidden>⋯</button>
+        <button class="icon-button" id="toggle-files" aria-label="打开文件侧栏" title="文件侧栏">▥</button><button class="icon-button" id="project-info" aria-label="项目共享说明" title="项目共享说明">ⓘ</button>
+      </header>
+      <div class="toolbar">
+        <div class="mode-tabs" role="group" aria-label="工作方式"><button id="relay-mode" aria-pressed="true">接力工作</button><button id="parallel-mode" aria-pressed="false">并行协作</button></div>
+        <span class="quiet-label" id="shared-label">共享文件 · 统一记录</span>
+      </div>
+      <div class="notice offline-notice" id="offline-notice" role="status" hidden>连接已断开，正在重连。恢复连接后才能发送新任务。</div>
+      <div class="error-banner" id="global-error" role="alert" hidden><span id="global-error-text"></span><button class="icon-button" id="dismiss-error" aria-label="关闭错误提示">×</button></div>
+      <div id="project-sync-notices" aria-live="polite" hidden></div>
+      <div class="other-chat-runs" id="other-chat-runs" aria-label="其他聊天中的任务" hidden></div>
+      <div class="archived-notice" id="archived-notice" hidden><span>这条聊天已归档，可以查看记录。</span><button class="text-button" id="restore-current-chat">恢复聊天</button></div>
+      <div class="archived-notice" id="chat-sync-notice" hidden><span id="chat-sync-message"></span><button class="text-button" id="retry-chat-sync">重试同步</button></div>
+      <div class="conversation-scroll" id="conversation-scroll">
+        <section class="welcome" id="welcome">
+          <img class="workspace-icon welcome-mark" src="/icons/workspace-v3-128.png" width="64" height="64" alt="">
+          <h2 id="welcome-title">让我们开始构建</h2>
+          <p id="welcome-text">新建或连接本机文件夹。Codex 和 Claude Code 共用项目资料，对话与交接记录保存在这个窗口。</p>
+          <button class="primary-button" id="welcome-create">新建或连接项目</button>
+          <div class="welcome-details"><span>文件保存在本机</span><span>使用官方工具登录</span><span>切换时自动准备交接</span></div>
+        </section>
+        <section class="messages" id="messages" aria-label="共享对话记录" aria-live="off"></section>
+        <div class="run-current-status" id="run-current-status" role="status" aria-live="polite" hidden></div>
+        <div class="run-list" id="run-list" aria-label="当前任务与历史执行记录"></div>
+        <section class="parallel-panel" id="parallel-panel" aria-labelledby="parallel-title" hidden>
+          <div class="parallel-heading"><button id="return-relay" class="text-button">← 返回聊天</button><h2 id="parallel-title">给两位助手分工</h2><p>使用同一项目，分别描述目标和负责的现有子目录。</p></div>
+          <form id="parallel-form">
+            <div class="parallel-grid">
+              <fieldset class="worker-card"><legend>前端任务</legend><label for="frontend-agent">执行助手</label><select id="frontend-agent" name="frontend-agent"></select><label for="frontend-scope">负责目录</label><input id="frontend-scope" placeholder="例如 frontend/" required autocomplete="off"><label for="frontend-task">任务要求</label><textarea id="frontend-task" rows="3" placeholder="描述前端需要完成的功能…" required></textarea><div class="worker-options"><label>模型<select id="frontend-model"></select></label><label>思考强度<select id="frontend-effort"></select></label></div><p class="provider-hint" id="frontend-hint"></p></fieldset>
+              <fieldset class="worker-card"><legend>后端任务</legend><label for="backend-agent">执行助手</label><select id="backend-agent" name="backend-agent"></select><label for="backend-scope">负责目录</label><input id="backend-scope" placeholder="例如 backend/" required autocomplete="off"><label for="backend-task">任务要求</label><textarea id="backend-task" rows="3" placeholder="描述后端需要完成的功能…" required></textarea><div class="worker-options"><label>模型<select id="backend-model"></select></label><label>思考强度<select id="backend-effort"></select></label></div><p class="provider-hint" id="backend-hint"></p></fieldset>
+            </div>
+            <p class="parallel-warning">请先在项目中准备两个已存在、互不重叠的子目录，再填写相对路径，例如 frontend/ 与 backend/。也可以先在「接力工作」中让一位助手搭好目录。目录分工用于协调，并不等同强隔离；公共配置、依赖和共享文件由一位助手统一修改。</p>
+            <div class="parallel-actions"><span class="muted small" id="parallel-status">只有已连接的官方工具可以执行。</span><button type="submit" class="primary-button" id="parallel-submit">开始并行任务</button></div>
+          </form>
+        </section>
+      </div>
+      <div class="composer-area" id="composer-area">
+        <div class="handoff-hint" id="handoff-hint" role="status" hidden></div>
+        <div class="composer-location" id="composer-location"><label for="draft-project" class="sr-only">选择项目</label><select id="draft-project"><option value="">选择项目（可不选）</option></select><span>▱ 此计算机</span></div>
+        <form class="composer" id="message-form">
+          <div id="editing-notice" hidden>正在编辑最后一条消息 <button type="button" id="cancel-edit" class="text-button">取消</button></div>
+          <div id="attachment-chips"></div>
+          <label class="sr-only" for="message-input">任务内容</label><textarea id="message-input" rows="2" placeholder="和 Codex 一起工作" aria-describedby="composer-hint"></textarea>
+          <div class="composer-controls"><div class="composer-left">
+            <details class="add-menu" id="add-menu"><summary aria-label="添加内容" title="添加内容">＋</summary><div class="add-menu-content">
+              <span class="menu-caption">添加</span><button type="button" id="attach-file">文件</button><button type="button" id="attach-folder">文件夹</button><button type="button" id="attach-project-file">项目文件和文件夹</button>
+              <button type="button" id="toggle-plan">计划模式</button><button type="button" id="draw-image">绘图</button><button type="button" id="open-catalog">插件、应用和技能</button><button type="button" id="open-parallel">并行协作</button><button type="button" id="feature-status">其他官方功能的接入情况</button>
+            </div></details>
+            <label class="sr-only" for="agent-select">执行助手</label><select class="agent-select" id="agent-select"></select><span id="plan-badge" hidden>计划</span>
+          </div><div class="composer-right">
+            <span class="context-indicator">
+              <button type="button" class="icon-button context-usage" id="context-usage" data-state="unknown" aria-label="上下文暂不可读" aria-describedby="context-usage-tooltip">
+                <svg class="context-ring" width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true" focusable="false">
+                  <circle class="context-ring-track" cx="10" cy="10" r="7.5" pathLength="100" />
+                  <circle class="context-ring-progress" id="context-ring-progress" cx="10" cy="10" r="7.5" pathLength="100" stroke-dasharray="0 100" />
+                </svg>
+              </button>
+              <span class="composer-tooltip" id="context-usage-tooltip" role="tooltip">上下文暂不可读</span>
+            </span>
+            <label class="sr-only" for="model-select">模型</label><select id="model-select"></select><label class="sr-only" for="effort-select">思考强度</label><select id="effort-select"></select>
+            <button type="button" class="icon-button" id="dictation-help" aria-label="Windows 听写" title="Windows 听写：按 Win + H">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="9" y="2.5" width="6" height="12" rx="3" /><path d="M5.5 10.5v1a6.5 6.5 0 0 0 13 0v-1M12 18v3.5M8.5 21.5h7" /></svg>
+            </button>
+            <button type="button" class="stop-button" id="stop-run" hidden>■</button><button type="submit" class="send-button" id="send-message" aria-label="发送任务" title="发送任务"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 20V4m-7 7 7-7 7 7" /></svg></button></div></div>
+        </form>
+        <input type="file" id="file-input" multiple hidden><input type="file" id="folder-input" webkitdirectory multiple hidden>
+        <p class="composer-hint" id="composer-hint">选择项目后开始。只会调用你选中的助手。</p>
+      </div>
+    </main><aside id="files-panel" class="files-panel" hidden><div class="file-panel-heading"><strong>文件</strong><button id="file-parent" class="text-button">上一级</button><button id="expand-file" class="icon-button" title="展开预览">⤢</button><button id="close-files" class="icon-button" aria-label="关闭文件侧栏">×</button></div><p id="file-folder" class="small muted"></p><div id="file-tree"></div><div id="file-preview"></div></aside>
+  </div>
+  <dialog id="project-dialog" aria-labelledby="project-dialog-title"><form id="project-form"><div class="dialog-heading"><h2 id="project-dialog-title">新建或连接项目</h2><button type="button" class="icon-button" data-close="project-dialog" aria-label="关闭">×</button></div><p class="muted"><span id="project-create-description">通过本机 Codex CLI 使用同一个文件夹。工作台管理项目与聊天，不需要打开 Codex 桌面端。</span></p><label for="new-project-name">项目名称</label><input id="new-project-name" name="name" placeholder="例如 示例" required maxlength="120" autocomplete="off"><label for="new-project-path">本机文件夹路径 <span class="muted">（可选）</span></label><div class="project-path-picker"><input id="new-project-path" name="path" placeholder="留空时使用工作台的默认项目目录" autocomplete="off"><button type="button" class="secondary-button" id="choose-project-folder">选择文件夹</button></div><label class="checkbox-label"><input type="checkbox" id="create-project-folder" checked> 文件夹不存在时创建</label><p class="dialog-note" id="project-location-note">项目统一放在 E:\AI，每个项目使用独立子文件夹。连接已有目录会保留其中的资料。</p><p class="form-error" id="project-error" role="alert" hidden></p><div class="dialog-actions"><button type="button" class="secondary-button" data-close="project-dialog">取消</button><button type="submit" class="primary-button" id="project-submit">创建共享项目</button></div></form></dialog>
+  <dialog id="info-dialog" aria-labelledby="info-title"><div class="dialog-heading"><h2 id="info-title">项目共享</h2><button type="button" class="icon-button" data-close="info-dialog" aria-label="关闭">×</button></div><dl class="info-list"><dt>共享文件夹</dt><dd id="info-path">尚未选择项目</dd><dt id="native-codex-label">Codex CLI 项目</dt><dd><span id="native-codex-status">尚未选择项目</span><p class="small" id="native-codex-error" hidden></p><button class="secondary-button native-project-action" id="register-codex-project" hidden>添加到 Codex 项目</button></dd><dt>Claude 桌面</dt><dd><span id="claude-desktop-status">尚未打开</span><p class="small" id="claude-desktop-project-error" hidden></p><button class="secondary-button native-project-action" id="open-claude-project">在 Claude 桌面打开文件夹</button><p class="small muted">打开同一本机目录；首次访问可能需要在 Claude 官方窗口确认。工作台仍通过 CLI 独立运行。</p></dd><dt>共享对话与进度</dt><dd>同一项目可新建多个聊天，各自保存对话与执行记录。两位助手使用同一项目文件夹，在选中的聊天内接力。长对话受模型上下文窗口限制。</dd><dt>共享范围</dt><dd id="native-sync">正在读取共享说明…</dd><dt>使用与计费</dt><dd>通过本机官方工具执行，消耗所选账号的订阅额度。并行任务分别消耗各自选中账号的额度。无法读取的额度会标为未知。</dd></dl><div class="dialog-actions"><button class="primary-button" data-close="info-dialog">知道了</button></div></dialog>
+  <dialog class="context-menu" id="chat-options-dialog" aria-labelledby="chat-options-title"><div class="dialog-heading"><h2 id="chat-options-title">聊天选项</h2><button type="button" class="icon-button" data-close="chat-options-dialog" aria-label="关闭">×</button></div><p class="muted chat-option-name" id="chat-options-name"></p><div class="chat-option-buttons"><button class="secondary-button" id="continue-claude-desktop" hidden>在 Claude 桌面继续</button><button class="secondary-button" id="rename-chat">重命名</button><button class="secondary-button" id="mark-unread">标记为未读</button><button class="secondary-button" id="archive-chat">归档聊天</button><button class="secondary-button danger-text" id="delete-chat">删除聊天</button></div><p class="small muted" id="chat-options-note">操作会处理这条聊天关联的本地助手会话，项目文件保留。</p><details class="small muted" id="chat-options-details" hidden><summary>Claude 归档与恢复范围</summary><p id="chat-options-archive-detail">已接入桌面的会话通过官方入口归档或恢复，原生聊天记录保留。未登记桌面的会话由工作台在本机暂存，恢复时放回原位；具体范围以本机能力和操作核验结果为准。</p></details><p class="form-error" id="chat-options-error" role="alert" hidden></p></dialog>
+  <dialog id="delete-chat-dialog" aria-labelledby="delete-chat-title"><div class="dialog-heading"><h2 id="delete-chat-title">永久删除这条聊天？</h2><button type="button" class="icon-button" data-close="delete-chat-dialog" aria-label="关闭">×</button></div><p id="delete-chat-name"></p><p class="muted" id="delete-chat-scope">永久删除工作台记录和已确认关联的本地助手会话。项目条目、项目文件和其他聊天保留。</p><details class="small muted" id="delete-chat-details" hidden><summary>删除范围与保留内容</summary><p>只处理这条聊天已确认关联的 Codex / Claude Code 本地会话、子任务记录、工作台归档暂存，以及已接入同步的对应桌面入口。项目文件、其他聊天、全局历史、调试日志和文件历史备份保留。桌面入口清理成功不代表云端或其他备份中的所有副本均已擦除。</p></details><p class="form-error" id="delete-chat-error" role="alert" hidden></p><div class="dialog-actions"><button class="secondary-button" data-close="delete-chat-dialog">取消</button><button class="primary-button danger-button" id="confirm-delete-chat">同步永久删除</button></div></dialog>
+  <dialog id="rename-chat-dialog" aria-labelledby="rename-chat-title"><form id="rename-chat-form"><div class="dialog-heading"><h2 id="rename-chat-title">重命名聊天</h2><button type="button" class="icon-button" data-close="rename-chat-dialog" aria-label="关闭">×</button></div><label for="chat-title-input">聊天名称</label><input id="chat-title-input" required maxlength="160" autocomplete="off"><p class="form-error" id="rename-chat-error" role="alert" hidden></p><div class="dialog-actions"><button type="button" class="secondary-button" data-close="rename-chat-dialog">取消</button><button type="submit" class="primary-button" id="rename-chat-submit">保存名称</button></div></form></dialog>
+  <dialog id="archived-chats-dialog" aria-labelledby="archived-chats-title"><div class="dialog-heading"><h2 id="archived-chats-title">已归档聊天</h2><button type="button" class="icon-button" data-close="archived-chats-dialog" aria-label="关闭">×</button></div><p class="muted" id="archived-chats-scope">归档、恢复会处理这条聊天已确认关联的助手会话和已接入同步的桌面入口。下方分别显示各助手的实际核验结果。项目条目、项目文件和其他聊天保留。</p><p id="archived-connection-notice" role="status" hidden>工作台服务暂时断开，正在自动重连。恢复、删除和同步按钮将在连接恢复后可用。</p><div class="archived-chat-list" id="archived-chat-list"></div><p class="form-error" id="archived-chats-error" role="alert" hidden></p></dialog>
+  <dialog id="approval-dialog" aria-labelledby="approval-title">
+    <div class="dialog-heading"><h2 id="approval-title">确认此次操作</h2><span class="header-tag" id="approval-agent"></span></div>
+    <p class="muted" id="approval-description"></p>
+    <p class="approval-summary" id="approval-summary"></p>
+    <p class="approval-reason" id="approval-reason" hidden></p>
+    <p class="approval-sandbox" id="approval-sandbox" hidden>这次操作申请在沙箱外执行。</p>
+    <dl class="approval-fields">
+      <div id="approval-cwd-field" hidden><dt>工作目录</dt><dd id="approval-cwd"></dd></div>
+      <div id="approval-command-field" hidden><dt>准备执行的命令</dt><dd><pre class="approval-command" id="approval-command"></pre></dd></div>
+      <div id="approval-permissions-field" hidden><dt>请求的权限范围</dt><dd><pre class="approval-command" id="approval-permissions"></pre></dd></div>
+    </dl>
+    <section id="approval-files-section" aria-label="待批准的文件操作" hidden><h3 class="approval-files-title" id="approval-files-title">文件改动</h3><div id="approval-files"></div></section>
+    <p class="approval-incomplete" id="approval-incomplete" role="status" hidden>操作明细不完整，暂不能批准。请拒绝，并让助手重新提供完整的命令或文件改动。</p>
+    <details class="approval-technical" id="approval-technical"><summary>技术详情</summary><pre class="approval-details" id="approval-details"></pre></details>
+    <p class="form-error" id="approval-error" role="alert" hidden></p>
+    <p class="small muted">只批准你确认需要的这次操作。</p>
+    <div class="dialog-actions"><button class="secondary-button" id="deny-approval" autofocus>拒绝</button><button class="primary-button" id="allow-approval">批准此次操作</button></div>
+  </dialog>
+  <dialog id="search-dialog"><div class="dialog-heading"><input id="search-input" placeholder="搜索聊天标题或对话内容" aria-label="搜索聊天"><button class="icon-button" data-close="search-dialog">×</button></div><div id="search-results"></div></dialog>
+  <dialog id="project-options-dialog" class="context-menu"><div class="menu-caption" id="project-options-name"></div><button id="project-edit">编辑项目</button><button id="project-open-claude">在 Claude 桌面打开文件夹</button><button id="project-archive-all">归档项目内聊天</button><button id="project-remove" class="danger-text">移除项目</button><button data-close="project-options-dialog">取消</button></dialog>
+  <dialog id="claude-desktop-dialog" aria-labelledby="claude-desktop-title"><div class="dialog-heading"><h2 id="claude-desktop-title">在 Claude 桌面继续</h2><button type="button" class="icon-button" data-close="claude-desktop-dialog" aria-label="关闭">×</button></div><p id="claude-desktop-path" class="dialog-note"></p><label for="claude-desktop-session">选择要继续的会话</label><select id="claude-desktop-session"></select><p class="muted">继续已有的 Claude 会话，保留其原生历史与上下文。返回工作台前，请先结束桌面中这条会话的运行，不需要退出整个 Claude。</p><p class="small muted">桌面中发送的新消息暂不自动显示在工作台聊天列表里。要让 Codex 与 Claude 的工作台记录保持完整，请继续以工作台为主要聊天入口。</p><p class="form-error" id="claude-desktop-error" role="alert" hidden></p><div class="dialog-actions"><button class="secondary-button" data-close="claude-desktop-dialog">取消</button><button class="primary-button" id="confirm-claude-desktop">打开并继续</button></div></dialog>
+  <dialog id="edit-project-dialog"><form id="edit-project-form"><div class="dialog-heading"><h2>编辑项目</h2><button type="button" class="icon-button" data-close="edit-project-dialog">×</button></div><label for="edit-project-name">项目名称</label><input id="edit-project-name" maxlength="80" required><label>源文件夹</label><p id="edit-project-path" class="dialog-note"></p><p class="muted small"><span id="project-edit-description">同时更新工作台和 Codex CLI 的项目名称。文件夹路径保持不变，已有聊天继续使用同一个目录。</span></p><div class="dialog-actions"><button type="button" class="secondary-button" data-close="edit-project-dialog">取消</button><button class="primary-button" id="save-project-name">保存并同步</button></div><p id="edit-project-error" class="danger-text" role="alert" hidden></p></form></dialog>
+  <dialog id="remove-project-dialog"><div class="dialog-heading"><h2>移除项目？</h2><button class="icon-button" data-close="remove-project-dialog">×</button></div><p><span id="project-remove-description">从工作台和 Codex CLI 的项目登记中移除。文件夹和聊天记录保留，聊天转入“最近”。如要删除聊天，请在聊天菜单中操作。</span></p><div class="dialog-actions"><button class="secondary-button" data-close="remove-project-dialog">取消</button><button id="confirm-remove-project" class="primary-button danger-button">移除并同步</button></div><p id="remove-project-error" class="danger-text" role="alert" hidden></p></dialog>
+  <dialog id="folder-browser-dialog" aria-labelledby="folder-browser-title">
+    <div class="dialog-heading"><h2 id="folder-browser-title">选择项目文件夹</h2><button type="button" class="icon-button" data-close="folder-browser-dialog" aria-label="关闭文件夹选择">×</button></div>
+    <p class="muted small">点击文件夹进入，再点击“选择此文件夹”。</p>
+    <div class="folder-toolbar"><button type="button" class="secondary-button" id="folder-up">上一级</button><p id="folder-browser-path" class="folder-location"></p><button type="button" class="secondary-button" id="folder-refresh">刷新</button></div>
+    <div id="folder-browser-list" class="folder-browser-list" role="group" aria-label="本机文件夹列表"></div>
+    <div class="folder-create-row"><input id="folder-new-name" placeholder="新文件夹名称" aria-label="新文件夹名称" maxlength="120"><button type="button" class="secondary-button" id="folder-create">新建文件夹</button></div>
+    <p class="muted small">仅浏览统一项目目录。新建文件夹会立即保存到本机，不会创建项目或聊天。</p>
+    <p id="folder-browser-error" class="form-error" role="alert" hidden></p>
+    <div class="dialog-actions"><button type="button" class="secondary-button" data-close="folder-browser-dialog">取消</button><button type="button" class="primary-button" id="folder-confirm">选择此文件夹</button></div>
+  </dialog>
+  <dialog id="catalog-dialog"><div class="dialog-heading"><h2>插件、应用和技能</h2><button class="icon-button" data-close="catalog-dialog">×</button></div><input id="catalog-filter" placeholder="搜索本机已安装的能力"><p class="muted small" id="catalog-status"></p><div id="catalog-list"></div></dialog>
+  <dialog id="drawing-dialog"><div class="dialog-heading"><h2>绘图</h2><button class="icon-button" data-close="drawing-dialog">×</button></div><canvas id="drawing-canvas" width="1000" height="600" aria-label="手绘画布"></canvas><div class="dialog-actions"><button class="secondary-button" id="clear-drawing">清空画布</button><button class="primary-button" id="attach-drawing">附加到消息</button></div></dialog>
+  <dialog id="features-dialog"><div class="dialog-heading"><h2>接入情况</h2><button class="icon-button" data-close="features-dialog">×</button></div><p>文件附件、绘图、计划模式、可用插件与技能已接入本机 Codex。插件目录以官方工具实际返回的结果为准。</p><p>官方桌面端的浏览器标签附加和持续目标调度，尚未在这个窗口接通。语音聊天按你的要求不添加。</p><p>听写可在输入框聚焦后按 Windows + H，是否可用取决于你的 Windows 语音设置。</p></dialog>
+  <div class="toast" id="toast" role="status" hidden></div>
+</body>
+</html>
